@@ -5,7 +5,10 @@ use serde_json::json;
 use crate::{
     http_status::{http_response::http_response, http_type::HttpType},
     id_is_number,
-    persistence::statement_repository::{StatementRepository, StatementRepositoryError},
+    persistence::{
+        account_repository::{AccountRepository, AccountRepositoryError},
+        statement_repository::StatementRepository,
+    },
 };
 
 pub fn controller(url: &str, socket: TcpStream) {
@@ -19,14 +22,27 @@ pub fn controller(url: &str, socket: TcpStream) {
                 ),
                 false => match url.contains(&format!("{id}/extrato")) {
                     true => {
-                        let statement_repository = StatementRepository;
+                        let account_repository = AccountRepository;
 
-                        match statement_repository.get_statement_by_id(id) {
-                            Ok(statement) => http_response(socket, HttpType::Ok, json!(statement)),
-                            Err(StatementRepositoryError::AccountNotFound) => http_response(
+                        match account_repository.get_accout_by_id(id) {
+                            Ok(account) => {
+                                let statement_repository = StatementRepository;
+
+                                match statement_repository.get_statement_by_id(id, account) {
+                                    Ok(statement) => {
+                                        http_response(socket, HttpType::Ok, json!(statement))
+                                    }
+                                    _ => http_response(
+                                        socket,
+                                        HttpType::InternalError,
+                                        json!({"message": "Internal Server Error"}),
+                                    ),
+                                }
+                            }
+                            Err(AccountRepositoryError::AccountNotFound) => http_response(
                                 socket,
                                 HttpType::NotFound,
-                                json!({"message": "Not Found"}),
+                                json!({"message": "Id not found"}),
                             ),
                             _ => http_response(
                                 socket,
