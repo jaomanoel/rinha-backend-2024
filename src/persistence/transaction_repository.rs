@@ -23,10 +23,10 @@ impl TransactionRepository {
             Ok(mut db) => {
                 let row_transactions = db.query(
                     r#"
-                        SELECT transacoes.valor, transacoes.tipo, transacoes.descricao, transacoes.realizada_em
+                        SELECT valor, tipo, descricao, realizada_em
                         FROM transacoes
-                        WHERE transacoes.cliente_id = $1
-                        ORDER BY transacoes.realizada_em DESC
+                        WHERE cliente_id = $1
+                        ORDER BY realizada_em DESC
                         LIMIT 10;
                     "#,
                     &[&id],
@@ -75,16 +75,19 @@ impl TransactionRepository {
                         let db_saldo_update = db_transaction.execute(
                             r#"UPDATE saldos SET valor = $1 WHERE cliente_id = $2;
                         "#,
-                            &[&(value + balance), &id],
+                            &[&(balance - value), &id],
                         );
 
-                        let mut db_clientes_update: Result<u64, Error> = Ok(0);
-                        if transaction_type == "c" {
-                            db_clientes_update = db_transaction.execute(
-                                r#"UPDATE clientes SET limite = $1 WHERE id = $2;"#,
-                                &[&(limit - value), &id],
-                            );
-                        }
+                        let amount: i32 = match transaction_type.as_ref() {
+                            "c" => limit + value,
+                            "d" => limit - value,
+                            _ => 0,
+                        };
+
+                        let db_clientes_update: Result<u64, Error> = db_transaction.execute(
+                            r#"UPDATE clientes SET limite = $1 WHERE id = $2;"#,
+                            &[&amount, &id],
+                        );
 
                         match (db_transaction_save, db_saldo_update, db_clientes_update) {
                             (Ok(_), Ok(_), Ok(_)) => db_transaction.commit().map_or_else(
