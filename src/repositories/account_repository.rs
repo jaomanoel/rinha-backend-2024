@@ -1,8 +1,6 @@
 use postgres::{Client, NoTls};
 
-use crate::model::account::Account;
-
-use super::database_url::url_postgres;
+use crate::{model::account::Account, persistence::database_url::url_postgres};
 
 pub struct AccountRepository;
 
@@ -13,7 +11,7 @@ pub enum AccountRepositoryError {
 
 impl AccountRepository {
     pub fn get_accout_by_id(&self, id: i32) -> Result<Account, AccountRepositoryError> {
-        let client = Client::connect(&url_postgres(), NoTls);
+        let client = Client::connect(&&url_postgres(), NoTls);
 
         match client {
             Ok(mut db) => {

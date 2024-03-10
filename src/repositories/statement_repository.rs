@@ -3,9 +3,8 @@ use chrono::Local;
 use crate::{
     dto::responses::{balance_response::BalanceResponse, statement_response::StatementResponse},
     model::account::Account,
+    repositories::transaction_repository::TransactionRepository,
 };
-
-use super::transaction_repository::TransactionRepository;
 
 pub struct StatementRepository;
 
