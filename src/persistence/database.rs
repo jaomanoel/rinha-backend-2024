@@ -6,6 +6,7 @@ pub struct Database {
     pub connection: Client,
 }
 
+#[derive(Debug)]
 pub enum DatabaseError {
     DatabaseConnection,
 }
