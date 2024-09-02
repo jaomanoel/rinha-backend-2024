@@ -1,39 +1,32 @@
-CREATE TABLE clientes (
-	id SERIAL PRIMARY KEY,
-	nome VARCHAR(50) NOT NULL,
-	limite INTEGER NOT NULL
+CREATE TABLE accounts (
+  id SERIAL UNIQUE NOT NULL,
+	name VARCHAR(50) NOT NULL,
+	limit_amount INTEGER NOT NULL,
+	balance INTEGER NOT NULL
 );
 
-CREATE TABLE transacoes (
+CREATE TABLE transactions (
 	id SERIAL PRIMARY KEY,
-	cliente_id INTEGER NOT NULL,
-	valor INTEGER NOT NULL,
-	tipo CHAR(1) NOT NULL,
-	descricao VARCHAR(10) NOT NULL,
-  realizada_em TIMESTAMP NOT NULL DEFAULT NOW(),
-	CONSTRAINT fk_clientes_transacoes_id
-		FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+	account_id INTEGER NOT NULL,
+	amount INTEGER NOT NULL,
+	transaction_type CHAR(1) NOT NULL,
+	description VARCHAR(10) NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT fk_accounts_transactions_id
+		FOREIGN KEY (account_id) REFERENCES accounts(id)
 );
 
-CREATE TABLE saldos (
-	id SERIAL PRIMARY KEY,
-	cliente_id INTEGER NOT NULL,
-	valor INTEGER NOT NULL,
-	CONSTRAINT fk_clientes_saldos_id
-		FOREIGN KEY (cliente_id) REFERENCES clientes(id)
-);
+CREATE INDEX idx_cov_accounts ON accounts(id) INCLUDE (limit_amount, balance);
+CREATE INDEX idx_transactions_account_id ON transactions(account_id);
 
 DO $$
 BEGIN
-	INSERT INTO clientes (nome, limite)
+	INSERT INTO accounts (name, limit_amount, balance)
 	VALUES
-		('o barato sai caro', 1000 * 100),
-		('zan corp ltda', 800 * 100),
-		('les cruders', 10000 * 100),
-		('padaria joia de cocaia', 100000 * 100),
-		('kid mais', 5000 * 100);
-
-	INSERT INTO saldos (cliente_id, valor)
-		SELECT id, 0 FROM clientes;
+		('o barato sai caro', 1000 * 100, 0),
+		('zan corp ltda', 800 * 100, 0),
+		('les cruders', 10000 * 100, 0),
+		('padaria joia de cocaia', 100000 * 100, 0),
+		('kid mais', 5000 * 100, 0);
 END;
 $$;
