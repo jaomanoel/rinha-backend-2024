@@ -1,39 +1,33 @@
-use postgres::{Client, NoTls};
-
-use crate::{model::account::Account, persistence::database_url::url_postgres};
+use crate::{model::account::Account, persistence::database::Database};
 
 pub struct AccountRepository;
 
 pub enum AccountRepositoryError {
     AccountNotFound,
-    ConnectionError,
 }
 
 impl AccountRepository {
-    pub fn get_accout_by_id(&self, id: i32) -> Result<Account, AccountRepositoryError> {
-        let client = Client::connect(&&url_postgres(), NoTls);
+    pub fn get_accout_by_id(
+        &self,
+        id: u32,
+        db: &mut Database,
+    ) -> Result<Account, AccountRepositoryError> {
+        let row = db.connection.query_one(
+            r#"
+                SELECT limit_amount, balance 
+                FROM accounts
+                WHERE accounts.id = $1
+                FOR UPDATE
+            "#,
+            &[&(id as i32)],
+        );
 
-        match client {
-            Ok(mut db) => {
-                let row = db.query_one(
-                    r#"
-                    SELECT clientes.limite, saldos.valor 
-                    FROM clientes
-                    LEFT JOIN saldos ON clientes.id = saldos.cliente_id
-                    WHERE cliente_id = $1;
-                "#,
-                    &[&id],
-                );
-
-                match row {
-                    Ok(account) => Ok(Account {
-                        limite: account.get("limite"),
-                        saldo: account.get("valor"),
-                    }),
-                    _ => Err(AccountRepositoryError::AccountNotFound),
-                }
-            }
-            _ => Err(AccountRepositoryError::ConnectionError),
+        match row {
+            Ok(account) => Ok(Account {
+                limite: account.get("limit_amount"),
+                saldo: account.get("balance"),
+            }),
+            _ => Err(AccountRepositoryError::AccountNotFound),
         }
     }
 }
